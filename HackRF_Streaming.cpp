@@ -283,6 +283,7 @@ int SoapyHackRF::activateStream(
 	const size_t numElems )
 {
 
+	printf("310 activateStream %p, _current_fq=%llu, _current_mode=%d\n", stream, _current_frequency, _current_mode);
 	if(stream == RX_STREAM){
 
 		std::lock_guard<std::mutex> lock(_device_mutex);
@@ -305,14 +306,14 @@ int SoapyHackRF::activateStream(
 			// sample_rate
 			if(_current_samplerate != _rx_stream.samplerate) {
 				_current_samplerate = _rx_stream.samplerate;
-				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set RX samplerate to %f", _current_samplerate);
+				SoapySDR_logf(SOAPY_SDR_DEBUG, "310 activateStream - Set hackrf RX samplerate to %f\n", _current_samplerate);
 				hackrf_set_sample_rate(_dev,_current_samplerate);
 			}
 			
 			// frequency
 			if(_current_frequency != _rx_stream.frequency) {
 				_current_frequency = _rx_stream.frequency;
-				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set RX frequency to %lu", _current_frequency);
+				SoapySDR_logf(SOAPY_SDR_DEBUG, "317 activateStream - Set hackrf (RX) frequency to %llu\n", _current_frequency);
 				hackrf_set_freq(_dev,_current_frequency);
 			}
 			
@@ -322,18 +323,18 @@ int SoapyHackRF::activateStream(
 			// RF Gain (RF Amp for TX & RX)
 			if(_current_amp != _rx_stream.amp_gain) {
 				_current_amp = _rx_stream.amp_gain;
-				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set RX amp gain to %d", _current_amp);
+				SoapySDR_logf(SOAPY_SDR_DEBUG, "327 activateStream - Set hackrf RX amp gain to %d\n", (_current_amp > 0) ? 1 : 0);
 				hackrf_set_amp_enable(_dev,(_current_amp > 0)?1 : 0 );
 			}
 			
 			// IF Gain (LNA for RX; VGA_TX for TX)
 			// BB Gain (VGA for RX; n/a for TX)
-			// These are independant values in the hackrf, so no need to change
+			// These are independent values in the hackrf, so no need to change
 
 			// Bandwidth
 			if(_current_bandwidth !=_rx_stream.bandwidth) {
 				_current_bandwidth =_rx_stream.bandwidth;
-				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set RX bandwidth to %d", _current_bandwidth);
+				SoapySDR_logf(SOAPY_SDR_DEBUG, "338 activateStream - Set hackrf RX bandwidth to %d\n", _current_bandwidth);
 				hackrf_set_baseband_filter_bandwidth(_dev,_current_bandwidth);
 			}
 		}
@@ -349,7 +350,7 @@ int SoapyHackRF::activateStream(
 
 		int ret = hackrf_start_rx(_dev, _hackrf_rx_callback, (void *) this);
 		if (ret != HACKRF_SUCCESS) {
-			SoapySDR::logf(SOAPY_SDR_ERROR, "hackrf_start_rx() failed -- %s", hackrf_error_name(hackrf_error(ret)));
+			SoapySDR::logf(SOAPY_SDR_ERROR, "354 hackrf_start_rx() failed -- %s\n", hackrf_error_name(hackrf_error(ret)));
 		}
 
 		ret=hackrf_is_streaming(_dev);
@@ -359,20 +360,27 @@ int SoapyHackRF::activateStream(
 			hackrf_close(_dev);
 			hackrf_open_by_serial(_serial.c_str(), &_dev);
 			_current_frequency=_rx_stream.frequency;
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "364 activateStream - Set (Rx) hackrf frequency to %llu\n", _current_frequency);
 			hackrf_set_freq(_dev,_current_frequency);
 			_current_samplerate=_rx_stream.samplerate;
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "367 activateStream - Set (Rx) hackrf sample rate to to %d\n", _current_samplerate);
 			hackrf_set_sample_rate(_dev,_current_samplerate);
 			_current_bandwidth=_rx_stream.bandwidth;
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "370 activateStream - Set (Rx) hackrf bandwidth to %d\n", _current_bandwidth);
 			hackrf_set_baseband_filter_bandwidth(_dev,_current_bandwidth);
 			_current_amp=_rx_stream.amp_gain;
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "374 activateStream - Set (Rx) amp enable to %d\n", (_current_amp > 0) ? 1 : 0);
 			hackrf_set_amp_enable(_dev,(_current_amp > 0)?1 : 0 );
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "375 activateStream - Set (Rx) lna gain to %d\n", _rx_stream.lna_gain);
 			hackrf_set_lna_gain(_dev,_rx_stream.lna_gain);
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "377 activateStream - Set (Rx) vga gain to %d\n", _rx_stream.vga_gain);
 			hackrf_set_vga_gain(_dev,_rx_stream.vga_gain);
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "379 activateStream - Start Rx\n");
 			hackrf_start_rx(_dev,_hackrf_rx_callback,(void *) this);
 			ret=hackrf_is_streaming(_dev);
 		}
 		if(ret!=HACKRF_TRUE){
-			SoapySDR_logf(SOAPY_SDR_ERROR,"Activate RX Stream Failed.");
+			SoapySDR_logf(SOAPY_SDR_ERROR, "384 Activate RX Stream Failed.\n");
 			return SOAPY_SDR_STREAM_ERROR;
 
 		}
@@ -402,14 +410,14 @@ int SoapyHackRF::activateStream(
 			// sample_rate
 			if(_current_samplerate != _tx_stream.samplerate) {
 				_current_samplerate=_tx_stream.samplerate;
-				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set TX samplerate to %f", _current_samplerate);
+				SoapySDR_logf(SOAPY_SDR_DEBUG, "414 activateStream - Set TX samplerate to %f", _current_samplerate);
 				hackrf_set_sample_rate(_dev,_current_samplerate);
 			}
 			
 			// frequency
 			if(_current_frequency != _tx_stream.frequency) {
 				_current_frequency=_tx_stream.frequency;
-				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set TX frequency to %lu", _current_frequency);
+				SoapySDR_logf(SOAPY_SDR_DEBUG, "421 activateStream - Set hackrf TX frequency to %llu", (unsigned long long) _current_frequency);
 				hackrf_set_freq(_dev,_current_frequency);
 			}
 			
@@ -419,7 +427,7 @@ int SoapyHackRF::activateStream(
 			// RF Gain (RF Amp for TX & RX)
 			if(_current_amp != _tx_stream.amp_gain) {
 				_current_amp=_tx_stream.amp_gain;
-				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set TX amp gain to %d", _current_amp);
+				SoapySDR_logf(SOAPY_SDR_DEBUG, "431 activateStream - Set TX amp gain to %d", _current_amp);
 				hackrf_set_amp_enable(_dev,(_current_amp > 0)?1 : 0 );
 			}
 			
@@ -430,18 +438,18 @@ int SoapyHackRF::activateStream(
 			// Bandwidth
 			if(_current_bandwidth !=_tx_stream.bandwidth) {
 				_current_bandwidth =_tx_stream.bandwidth;
-				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set RX bandwidth to %d", _current_bandwidth);
+				SoapySDR_logf(SOAPY_SDR_DEBUG, "442 activateStream - Set TX bandwidth to %d", _current_bandwidth);
 				hackrf_set_baseband_filter_bandwidth(_dev,_current_bandwidth);
 			}
 
 		}
 
-		SoapySDR_logf( SOAPY_SDR_DEBUG, "Start TX" );
+		SoapySDR_logf(SOAPY_SDR_DEBUG, "448 Start TX");
 
 		int ret = hackrf_start_tx( _dev, _hackrf_tx_callback, (void *) this );
 		if (ret != HACKRF_SUCCESS)
 		{
-			SoapySDR::logf(SOAPY_SDR_ERROR, "hackrf_start_tx() failed -- %s", hackrf_error_name(hackrf_error(ret)));
+			SoapySDR::logf(SOAPY_SDR_ERROR, "453 hackrf_start_tx() failed -- %s", hackrf_error_name(hackrf_error(ret)));
 		}
 
 		ret=hackrf_is_streaming(_dev);
@@ -452,15 +460,22 @@ int SoapyHackRF::activateStream(
 			hackrf_close(_dev);
 			hackrf_open_by_serial(_serial.c_str(), &_dev);
 			_current_frequency=_tx_stream.frequency;
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "464 activateStream - Setting (Tx) hackrf frequency to %llu\n", (unsigned long long) _current_frequency);
 			hackrf_set_freq(_dev,_current_frequency);
 			_current_samplerate=_tx_stream.samplerate;
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "467 activateStream - Setting (Tx) hackrf sample rate to to %d\n", _current_samplerate);
 			hackrf_set_sample_rate(_dev,_current_samplerate);
 			_current_bandwidth=_tx_stream.bandwidth;
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "470 activateStream - Setting (Tx) hackrf bandwidth to %d\n", _current_bandwidth);
 			hackrf_set_baseband_filter_bandwidth(_dev,_current_bandwidth);
 			_current_amp=_rx_stream.amp_gain;
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "473 activateStream - Set (Tx) amp enable to %d\n", (_current_amp > 0) ? 1 : 0);
 			hackrf_set_amp_enable(_dev,(_current_amp > 0)?1 : 0 );
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "475 activateStream - Set (Tx) vga gain to %d\n", _tx_stream.vga_gain);
 			hackrf_set_txvga_gain(_dev,_tx_stream.vga_gain);
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "477 activateStream - Set (Tx) antenna  enable to %d\n", _tx_stream.bias);
 			hackrf_set_antenna_enable(_dev,_tx_stream.bias);
+			SoapySDR_logf(SOAPY_SDR_DEBUG, "479 activateStream - Start Tx\n");
 			hackrf_start_tx(_dev,_hackrf_tx_callback,(void *) this);
 			ret=hackrf_is_streaming(_dev);
 		}
@@ -491,7 +506,7 @@ int SoapyHackRF::deactivateStream(
 
 			int ret = hackrf_stop_rx(_dev);
 			if (ret != HACKRF_SUCCESS) {
-				SoapySDR::logf(SOAPY_SDR_ERROR, "hackrf_stop_rx() failed -- %s", hackrf_error_name(hackrf_error(ret)));
+				SoapySDR::logf(SOAPY_SDR_ERROR, "510 hackrf_stop_rx() failed -- %s", hackrf_error_name(hackrf_error(ret)));
 			}
 			_current_mode = HACKRF_TRANSCEIVER_MODE_OFF;
 		}
