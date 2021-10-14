@@ -312,7 +312,7 @@ int SoapyHackRF::activateStream(
 			// frequency
 			if(_current_frequency != _rx_stream.frequency) {
 				_current_frequency = _rx_stream.frequency;
-				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set RX frequency to %lu", _current_frequency);
+				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set RX frequency to %llu", (unsigned long long) _current_frequency);
 				hackrf_set_freq(_dev,_current_frequency);
 			}
 			
@@ -328,7 +328,7 @@ int SoapyHackRF::activateStream(
 			
 			// IF Gain (LNA for RX; VGA_TX for TX)
 			// BB Gain (VGA for RX; n/a for TX)
-			// These are independant values in the hackrf, so no need to change
+			// These are independent values in the hackrf, so no need to change
 
 			// Bandwidth
 			if(_current_bandwidth !=_rx_stream.bandwidth) {
@@ -409,7 +409,7 @@ int SoapyHackRF::activateStream(
 			// frequency
 			if(_current_frequency != _tx_stream.frequency) {
 				_current_frequency=_tx_stream.frequency;
-				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set TX frequency to %lu", _current_frequency);
+				SoapySDR_logf(SOAPY_SDR_DEBUG, "421 activateStream - Set TX frequency to %llu", _current_frequency);
 				hackrf_set_freq(_dev,_current_frequency);
 			}
 			
@@ -430,7 +430,7 @@ int SoapyHackRF::activateStream(
 			// Bandwidth
 			if(_current_bandwidth !=_tx_stream.bandwidth) {
 				_current_bandwidth =_tx_stream.bandwidth;
-				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set RX bandwidth to %d", _current_bandwidth);
+				SoapySDR_logf(SOAPY_SDR_DEBUG, "activateStream - Set TX bandwidth to %d", _current_bandwidth);
 				hackrf_set_baseband_filter_bandwidth(_dev,_current_bandwidth);
 			}
 
