@@ -316,8 +316,11 @@ void SoapyHackRF::setGain( const int direction, const size_t channel, const doub
 
 		_rx_stream.amp_gain=_current_amp;
 
+		//SoapySDR_logf(SOAPY_SDR_DEBUG, "set hackrf (Rx) LNA gain to %d", _rx_stream.lna_gain);
 		ret	= hackrf_set_lna_gain( _dev, _rx_stream.lna_gain );
+		//SoapySDR_logf(SOAPY_SDR_DEBUG, "set hackrf (Rx) VGA gain to  %d", _rx_stream.vga_gain);
 		ret	|= hackrf_set_vga_gain( _dev, _rx_stream.vga_gain );
+		//SoapySDR_logf(SOAPY_SDR_DEBUG, "set hackrf (Rx) amp enable to %d", (_current_amp > 0) ? 1 : 0);
 		ret	|= hackrf_set_amp_enable( _dev, (_current_amp > 0) ? 1 : 0 );
 	}else if ( direction == SOAPY_SDR_TX )
 	{
@@ -337,8 +340,13 @@ void SoapyHackRF::setGain( const int direction, const size_t channel, const doub
 
 		_tx_stream.amp_gain=_current_amp;
 
+		int amp_enable = (_current_amp > 0) ? 1 : 0;
+
+		// SoapySDR::logf(SOAPY_SDR_DEBUG, "setting hackrf TX vga gain set to %d", _tx_stream.vga_gain);
 		ret	= hackrf_set_txvga_gain( _dev, _tx_stream.vga_gain );
-		ret	|= hackrf_set_amp_enable( _dev, (_current_amp > 0) ? 1 : 0 );
+
+		// SoapySDR::logf(SOAPY_SDR_DEBUG, "setting hackrf (TX) amp enable set to %d", amp_enable);
+		ret |= hackrf_set_amp_enable(_dev, amp_enable);
 	}
 	if ( ret != HACKRF_SUCCESS )
 	{
@@ -357,8 +365,10 @@ void SoapyHackRF::setGain( const int direction, const size_t channel, const std:
 		_current_amp = (_current_amp > 0)?HACKRF_AMP_MAX_DB : 0; //clip to possible values
 
 		if(direction == SOAPY_SDR_RX){
+			//SoapySDR_logf(SOAPY_SDR_DEBUG, "setting RX stream amp gain to %d\n", _current_amp);
 			_rx_stream.amp_gain=_current_amp;
 		}else if (direction ==SOAPY_SDR_TX){
+			//SoapySDR_logf(SOAPY_SDR_DEBUG, "setting TX stream amp gain to %d\n", _current_amp);
 			_tx_stream.amp_gain=_current_amp;
 		}
 
@@ -367,6 +377,7 @@ void SoapyHackRF::setGain( const int direction, const size_t channel, const std:
 	{
 		if ( _dev != NULL )
 		{
+			//SoapySDR::logf(SOAPY_SDR_DEBUG, "hackrf (TX) amp enable set to %d", (_current_amp > 0) ? 1 : 0);
 			int ret = hackrf_set_amp_enable( _dev, (_current_amp > 0)?1 : 0 );
 			if ( ret != HACKRF_SUCCESS )
 			{
@@ -379,6 +390,7 @@ void SoapyHackRF::setGain( const int direction, const size_t channel, const std:
 		_rx_stream.lna_gain = value;
 		if ( _dev != NULL )
 		{
+			//SoapySDR_logf(SOAPY_SDR_DEBUG, "set hackrf (Rx) LNA gain to %d", _rx_stream.lna_gain);
 			int ret = hackrf_set_lna_gain( _dev, _rx_stream.lna_gain );
 			if ( ret != HACKRF_SUCCESS )
 			{
@@ -390,6 +402,7 @@ void SoapyHackRF::setGain( const int direction, const size_t channel, const std:
 		_rx_stream.vga_gain = value;
 		if ( _dev != NULL )
 		{
+			//SoapySDR_logf(SOAPY_SDR_DEBUG, "set hackrf (Rx) VGA gain to  %d", _rx_stream.vga_gain);
 			int ret = hackrf_set_vga_gain( _dev, _rx_stream.vga_gain );
 			if ( ret != HACKRF_SUCCESS )
 			{
@@ -401,6 +414,7 @@ void SoapyHackRF::setGain( const int direction, const size_t channel, const std:
 		_tx_stream.vga_gain = value;
 		if ( _dev != NULL )
 		{
+			//SoapySDR::logf(SOAPY_SDR_DEBUG, "setting hackrf TX vga gain set to %d", _tx_stream.vga_gain);
 			int ret = hackrf_set_txvga_gain( _dev, _tx_stream.vga_gain );
 			if ( ret != HACKRF_SUCCESS )
 			{
@@ -483,7 +497,7 @@ void SoapyHackRF::setFrequency( const int direction, const size_t channel, const
 
 		if ( ret != HACKRF_SUCCESS )
 		{
-			SoapySDR::logf( SOAPY_SDR_ERROR, "hackrf_set_freq(%f) returned %s", _current_frequency, hackrf_error_name( (hackrf_error) ret ) );
+			SoapySDR::logf( SOAPY_SDR_ERROR, "hackrf_set_freq(%llu) returned %s", (unsigned long long) _current_frequency, hackrf_error_name( (hackrf_error) ret ) );
 		}
 	}
 }
@@ -571,6 +585,7 @@ void SoapyHackRF::setSampleRate( const int direction, const size_t channel, cons
 				_tx_stream.bandwidth=_current_bandwidth;
 			}
 
+			// SoapySDR::logf(SOAPY_SDR_DEBUG, "setting hackrf bandwidth  to %d", _current_bandwidth);
 			ret|=hackrf_set_baseband_filter_bandwidth(_dev,_current_bandwidth);
 		}
 
@@ -630,6 +645,7 @@ void SoapyHackRF::setBandwidth( const int direction, const size_t channel, const
 
 		if ( _dev != NULL )
 		{
+			// SoapySDR::logf(SOAPY_SDR_DEBUG, "setting hackrf bandwidth  to %d", _current_bandwidth);
 			int ret = hackrf_set_baseband_filter_bandwidth( _dev, _current_bandwidth );
 			if ( ret != HACKRF_SUCCESS )
 			{
