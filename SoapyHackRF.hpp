@@ -22,6 +22,7 @@
  */
 
 #pragma once
+
 #include <hackrf.h>
 #include <string.h>
 #include <mutex>
@@ -30,351 +31,313 @@
 #include <SoapySDR/Logger.hpp>
 #include <set>
 
-#define BUF_LEN			262144
-#define BUF_NUM			15
-#define BYTES_PER_SAMPLE	2
+#define BUF_LEN            262144
+#define BUF_NUM            15
+#define BYTES_PER_SAMPLE    2
 #define HACKRF_RX_VGA_MAX_DB 62
 #define HACKRF_TX_VGA_MAX_DB 47
 #define HACKRF_RX_LNA_MAX_DB 40
 #define HACKRF_AMP_MAX_DB 14
 
 enum HackRF_Format {
-	HACKRF_FORMAT_FLOAT32	=0,
-	HACKRF_FORMAT_INT16	=1,
-	HACKRF_FORMAT_INT8	=2,
-	HACKRF_FORMAT_FLOAT64 =3,
+    HACKRF_FORMAT_FLOAT32 = 0,
+    HACKRF_FORMAT_INT16 = 1,
+    HACKRF_FORMAT_INT8 = 2,
+    HACKRF_FORMAT_FLOAT64 = 3,
 };
 
 typedef enum {
-	HACKRF_TRANSCEIVER_MODE_OFF = 0,
-	HACKRF_TRANSCEIVER_MODE_RX = 1,
-	HACKRF_TRANSCEIVER_MODE_TX = 2,
+    HACKRF_TRANSCEIVER_MODE_OFF = 0,
+    HACKRF_TRANSCEIVER_MODE_RX = 1,
+    HACKRF_TRANSCEIVER_MODE_TX = 2,
 } HackRF_transceiver_mode_t;
 
-std::set<std::string> &HackRF_getClaimedSerials(void);
+std::set <std::string>& HackRF_getClaimedSerials(void);
 
 /*!
  * The session object manages hackrf_init/exit
  * with a process-wide reference count.
  */
-class SoapyHackRFSession
-{
+class SoapyHackRFSession {
 public:
-	SoapyHackRFSession(void);
-	~SoapyHackRFSession(void);
+    SoapyHackRFSession(void);
+
+    ~SoapyHackRFSession(void);
 };
 
-class SoapyHackRF : public SoapySDR::Device
-{
+class SoapyHackRF : public SoapySDR::Device {
 public:
-	SoapyHackRF( const SoapySDR::Kwargs & args );
+    SoapyHackRF(const SoapySDR::Kwargs& args);
+
+    ~SoapyHackRF(void);
+
+/*******************************************************************
+ * Identification API
+ ******************************************************************/
 
-	~SoapyHackRF( void );
+    std::string getDriverKey(void) const;
+
+    std::string getHardwareKey(void) const;
 
+    SoapySDR::Kwargs getHardwareInfo(void) const;
 
-	/*******************************************************************
-	 * Identification API
-	 ******************************************************************/
+/*******************************************************************
+ * Channels API
+ ******************************************************************/
 
-	std::string getDriverKey( void ) const;
+    size_t getNumChannels(const int) const;
 
+    bool getFullDuplex(const int direction, const size_t channel) const;
 
-	std::string getHardwareKey( void ) const;
+/*******************************************************************
+ * Stream API
+ ******************************************************************/
 
+    std::vector <std::string> getStreamFormats(const int direction, const size_t channel) const;
 
-	SoapySDR::Kwargs getHardwareInfo( void ) const;
+    std::string getNativeStreamFormat(const int direction, const size_t channel, double& fullScale) const;
 
+    SoapySDR::ArgInfoList getStreamArgsInfo(const int direction, const size_t channel) const;
 
-	/*******************************************************************
-	 * Channels API
-	 ******************************************************************/
+    SoapySDR::Stream* setupStream(
+            const int direction,
+            const std::string& format,
+            const std::vector <size_t>& channels = std::vector<size_t>(),
+            const SoapySDR::Kwargs& args = SoapySDR::Kwargs());
 
-	size_t getNumChannels( const int ) const;
+    void closeStream(SoapySDR::Stream* stream);
 
+    size_t getStreamMTU(SoapySDR::Stream* stream) const;
 
-	bool getFullDuplex( const int direction, const size_t channel ) const;
+    int activateStream(
+            SoapySDR::Stream* stream,
+            const int flags = 0,
+            const long long timeNs = 0,
+            const size_t numElems = 0);
 
+    int deactivateStream(
+            SoapySDR::Stream* stream,
+            const int flags = 0,
+            const long long timeNs = 0);
 
-	/*******************************************************************
-	 * Stream API
-	 ******************************************************************/
+    int readStream(
+            SoapySDR::Stream* stream,
+            void* const* buffs,
+            const size_t numElems,
+            int& flags,
+            long long& timeNs,
+            const long timeoutUs = 100000);
 
-	std::vector<std::string> getStreamFormats(const int direction, const size_t channel) const;
+    int writeStream(
+            SoapySDR::Stream* stream,
+            const void* const* buffs,
+            const size_t numElems,
+            int& flags,
+            const long long timeNs = 0,
+            const long timeoutUs = 100000);
 
-	std::string getNativeStreamFormat(const int direction, const size_t channel, double &fullScale) const;
+    int readStreamStatus(
+            SoapySDR::Stream* stream,
+            size_t& chanMask,
+            int& flags,
+            long long& timeNs,
+            const long timeoutUs
+    );
 
-	SoapySDR::ArgInfoList getStreamArgsInfo(const int direction, const size_t channel) const;
+    int acquireReadBuffer(
+            SoapySDR::Stream* stream,
+            size_t& handle,
+            const void** buffs,
+            int& flags,
+            long long& timeNs,
+            const long timeoutUs = 100000);
 
-	SoapySDR::Stream *setupStream(
-		const int direction,
-		const std::string &format,
-		const std::vector<size_t> &channels = std::vector<size_t>(),
-		const SoapySDR::Kwargs &args = SoapySDR::Kwargs() );
+    void releaseReadBuffer(
+            SoapySDR::Stream* stream,
+            const size_t handle);
 
+    int acquireWriteBuffer(
+            SoapySDR::Stream* stream,
+            size_t& handle,
+            void** buffs,
+            const long timeoutUs = 100000);
 
-	void closeStream( SoapySDR::Stream *stream );
+    void releaseWriteBuffer(
+            SoapySDR::Stream* stream,
+            const size_t handle,
+            const size_t numElems,
+            int& flags,
+            const long long timeNs = 0);
 
+    size_t getNumDirectAccessBuffers(SoapySDR::Stream* stream);
 
-	size_t getStreamMTU( SoapySDR::Stream *stream ) const;
+    int getDirectAccessBufferAddrs(SoapySDR::Stream* stream, const size_t handle, void** buffs);
 
+/*******************************************************************
+ * Settings API
+ ******************************************************************/
 
-	int activateStream(
-		SoapySDR::Stream *stream,
-		const int flags = 0,
-		const long long timeNs = 0,
-		const size_t numElems = 0 );
+    SoapySDR::ArgInfoList getSettingInfo(void) const;
 
+    void writeSetting(const std::string& key, const std::string& value);
 
-	int deactivateStream(
-		SoapySDR::Stream *stream,
-		const int flags = 0,
-		const long long timeNs = 0 );
+    std::string readSetting(const std::string& key) const;
 
+/*******************************************************************
+ * Antenna API
+ ******************************************************************/
 
-	int readStream(
-		SoapySDR::Stream *stream,
-		void * const *buffs,
-		const size_t numElems,
-		int &flags,
-		long long &timeNs,
-		const long timeoutUs = 100000 );
+    std::vector <std::string> listAntennas(const int direction, const size_t channel) const;
 
+    void setAntenna(const int direction, const size_t channel, const std::string& name);
 
-	int writeStream(
-			SoapySDR::Stream *stream,
-			const void * const *buffs,
-			const size_t numElems,
-			int &flags,
-			const long long timeNs = 0,
-			const long timeoutUs = 100000);
+    std::string getAntenna(const int direction, const size_t channel) const;
 
-	int readStreamStatus(
-			SoapySDR::Stream *stream,
-			size_t &chanMask,
-			int &flags,
-			long long &timeNs,
-			const long timeoutUs
-	);
+/*******************************************************************
+ * Frontend corrections API
+ ******************************************************************/
 
+    bool hasDCOffsetMode(const int direction, const size_t channel) const;
 
-	int acquireReadBuffer(
-			SoapySDR::Stream *stream,
-			size_t &handle,
-			const void **buffs,
-			int &flags,
-			long long &timeNs,
-			const long timeoutUs = 100000);
+/*******************************************************************
+ * Gain API
+ ******************************************************************/
 
-	void releaseReadBuffer(
-			SoapySDR::Stream *stream,
-			const size_t handle);
+    std::vector <std::string> listGains(const int direction, const size_t channel) const;
 
-	int acquireWriteBuffer(
-			SoapySDR::Stream *stream,
-			size_t &handle,
-			void **buffs,
-			const long timeoutUs = 100000);
+    void setGainMode(const int direction, const size_t channel, const bool automatic);
 
-	void releaseWriteBuffer(
-			SoapySDR::Stream *stream,
-			const size_t handle,
-			const size_t numElems,
-			int &flags,
-			const long long timeNs = 0);
+    bool getGainMode(const int direction, const size_t channel) const;
 
-	size_t getNumDirectAccessBuffers(SoapySDR::Stream *stream);
+    void setGain(const int direction, const size_t channel, const double value);
 
-	int getDirectAccessBufferAddrs(SoapySDR::Stream *stream, const size_t handle, void **buffs);
+    void setGain(const int direction, const size_t channel, const std::string& name, const double value);
 
-	/*******************************************************************
-	 * Settings API
-	 ******************************************************************/
+    double getGain(const int direction, const size_t channel, const std::string& name) const;
 
-	SoapySDR::ArgInfoList getSettingInfo(void) const;
+    SoapySDR::Range getGainRange(const int direction, const size_t channel, const std::string& name) const;
 
+/*******************************************************************
+ * Frequency API
+ ******************************************************************/
 
-	void writeSetting(const std::string &key, const std::string &value);
+    void setFrequency(const int direction, const size_t channel, const std::string& name, const double frequency,
+            const SoapySDR::Kwargs& args = SoapySDR::Kwargs());
 
+    double getFrequency(const int direction, const size_t channel, const std::string& name) const;
 
-	std::string readSetting(const std::string &key) const;
+    SoapySDR::ArgInfoList getFrequencyArgsInfo(const int direction, const size_t channel) const;
 
+    std::vector <std::string> listFrequencies(const int direction, const size_t channel) const;
 
-	/*******************************************************************
-	 * Antenna API
-	 ******************************************************************/
+    SoapySDR::RangeList getFrequencyRange(const int direction, const size_t channel, const std::string& name) const;
 
-	std::vector<std::string> listAntennas( const int direction, const size_t channel ) const;
+/*******************************************************************
+ * Sample Rate API
+ ******************************************************************/
 
+    void setSampleRate(const int direction, const size_t channel, const double rate);
 
-	void setAntenna( const int direction, const size_t channel, const std::string &name );
+    double getSampleRate(const int direction, const size_t channel) const;
 
+    std::vector<double> listSampleRates(const int direction, const size_t channel) const;
 
-	std::string getAntenna( const int direction, const size_t channel ) const;
+    void setBandwidth(const int direction, const size_t channel, const double bw);
 
+    double getBandwidth(const int direction, const size_t channel) const;
 
-	/*******************************************************************
-	 * Frontend corrections API
-	 ******************************************************************/
+    std::vector<double> listBandwidths(const int direction, const size_t channel) const;
 
-	bool hasDCOffsetMode( const int direction, const size_t channel ) const;
+/*******************************************************************
+  * HackRF callback
+  ******************************************************************/
+    int hackrf_tx_callback(int8_t* buffer, int32_t length);
 
-
-	/*******************************************************************
-	 * Gain API
-	 ******************************************************************/
-
-	std::vector<std::string> listGains( const int direction, const size_t channel ) const;
-
-
-	void setGainMode( const int direction, const size_t channel, const bool automatic );
-
-
-	bool getGainMode( const int direction, const size_t channel ) const;
-
-
-	void setGain( const int direction, const size_t channel, const double value );
-
-
-	void setGain( const int direction, const size_t channel, const std::string &name, const double value );
-
-
-	double getGain( const int direction, const size_t channel, const std::string &name ) const;
-
-
-	SoapySDR::Range getGainRange( const int direction, const size_t channel, const std::string &name ) const;
-
-
-	/*******************************************************************
-	 * Frequency API
-	 ******************************************************************/
-
-	void setFrequency( const int direction, const size_t channel, const std::string &name, const double frequency, const SoapySDR::Kwargs &args = SoapySDR::Kwargs() );
-
-
-	double getFrequency( const int direction, const size_t channel, const std::string &name ) const;
-
-
-	SoapySDR::ArgInfoList getFrequencyArgsInfo(const int direction, const size_t channel) const;
-
-
-	std::vector<std::string> listFrequencies( const int direction, const size_t channel ) const;
-
-
-	SoapySDR::RangeList getFrequencyRange( const int direction, const size_t channel, const std::string &name ) const;
-
-
-	/*******************************************************************
-	 * Sample Rate API
-	 ******************************************************************/
-
-	void setSampleRate( const int direction, const size_t channel, const double rate );
-
-
-	double getSampleRate( const int direction, const size_t channel ) const;
-
-
-	std::vector<double> listSampleRates( const int direction, const size_t channel ) const;
-
-
-	void setBandwidth( const int direction, const size_t channel, const double bw );
-
-
-	double getBandwidth( const int direction, const size_t channel ) const;
-
-
-	std::vector<double> listBandwidths( const int direction, const size_t channel ) const;
-
-	/*******************************************************************
- 	 * HackRF callback
- 	 ******************************************************************/
-	int hackrf_tx_callback( int8_t *buffer, int32_t length );
-
-
-	int hackrf_rx_callback( int8_t *buffer, int32_t length );
-
-
-
+    int hackrf_rx_callback(int8_t* buffer, int32_t length);
 
 private:
 
-	SoapySDR::Stream* const TX_STREAM = (SoapySDR::Stream*) 0x1;
-	SoapySDR::Stream* const RX_STREAM = (SoapySDR::Stream*) 0x2;
+    SoapySDR::Stream* const TX_STREAM = (SoapySDR::Stream*) 0x1;
+    SoapySDR::Stream* const RX_STREAM = (SoapySDR::Stream*) 0x2;
 
-	struct Stream {
-		Stream(): opened(false), buf_num(BUF_NUM), buf_len(BUF_LEN), buf(nullptr),
-				  buf_head(0), buf_tail(0), buf_count(0),
-				  remainderHandle(-1), remainderSamps(0), remainderOffset(0), remainderBuff(nullptr),
-				  format(HACKRF_FORMAT_INT8) {}
+    struct Stream {
+        Stream()
+                :opened(false), buf_num(BUF_NUM), buf_len(BUF_LEN), buf(nullptr),
+                 buf_head(0), buf_tail(0), buf_count(0),
+                 remainderHandle(-1), remainderSamps(0), remainderOffset(0), remainderBuff(nullptr),
+                 format(HACKRF_FORMAT_INT8) { }
 
-		bool opened;
-		uint32_t	buf_num;
-		uint32_t	buf_len;
-		int8_t		**buf;
-		uint32_t	buf_head;
-		uint32_t	buf_tail;
-		uint32_t	buf_count;
+        bool opened;
+        uint32_t buf_num;
+        uint32_t buf_len;
+        int8_t** buf;
+        uint32_t buf_head;
+        uint32_t buf_tail;
+        uint32_t buf_count;
 
-		int32_t remainderHandle;
-		size_t remainderSamps;
-		size_t remainderOffset;
-		int8_t* remainderBuff;
-		uint32_t format;
+        int32_t remainderHandle;
+        size_t remainderSamps;
+        size_t remainderOffset;
+        int8_t* remainderBuff;
+        uint32_t format;
 
-		~Stream() { clear_buffers(); }
-		void clear_buffers();
-		void allocate_buffers();
-	};
+        ~Stream() { clear_buffers(); }
 
-	struct RXStream: Stream {
-		uint32_t vga_gain;
-		uint32_t lna_gain;
-		uint8_t amp_gain;
-		double samplerate;
-		uint32_t bandwidth;
-		uint64_t frequency;
+        void clear_buffers();
 
-		bool overflow;
-	};
+        void allocate_buffers();
+    };
 
-	struct TXStream: Stream {
-		uint32_t vga_gain;
-		uint8_t amp_gain;
-		double samplerate;
-		uint32_t bandwidth;
-		uint64_t frequency;
-		bool bias;
+    struct RXStream : Stream {
+        uint32_t vga_gain;
+        uint32_t lna_gain;
+        uint8_t amp_gain;
+        double samplerate;
+        uint32_t bandwidth;
+        uint64_t frequency;
 
-		bool underflow;
+        bool overflow;
+    };
 
-		bool burst_end;
-		int32_t burst_samps;
-	} ;
+    struct TXStream : Stream {
+        uint32_t vga_gain;
+        uint8_t amp_gain;
+        double samplerate;
+        uint32_t bandwidth;
+        uint64_t frequency;
+        bool bias;
 
-	RXStream _rx_stream;
-	TXStream _tx_stream;
+        bool underflow;
 
-	bool _auto_bandwidth;
+        bool burst_end;
+        int32_t burst_samps;
+    };
 
-	hackrf_device * _dev;
-	std::string _serial;
+    RXStream _rx_stream;
+    TXStream _tx_stream;
 
-	uint64_t _current_frequency;
+    bool _auto_bandwidth;
 
-	double _current_samplerate;
+    hackrf_device* _dev;
+    std::string _serial;
 
-	uint32_t _current_bandwidth;
+    uint64_t _current_frequency;
 
-	uint8_t _current_amp;
+    double _current_samplerate;
 
-	/// Mutex protecting all use of the hackrf device _dev and other instance variables.
-	/// Most of the hackrf API is thread-safe because it only calls libusb, however
-	/// the activateStream() method in this library can close and re-open the device,
-	/// so all use of _dev must be protected
-	mutable std::mutex	_device_mutex;
-	std::mutex	_buf_mutex;
-	std::condition_variable _buf_cond;
+    uint32_t _current_bandwidth;
 
-	HackRF_transceiver_mode_t _current_mode;
+    uint8_t _current_amp;
 
-	SoapyHackRFSession _sess;
+/// Mutex protecting all use of the hackrf device _dev and other instance variables.
+/// Most of the hackrf API is thread-safe because it only calls libusb, however
+/// the activateStream() method in this library can close and re-open the device,
+/// so all use of _dev must be protected
+    mutable std::mutex _device_mutex;
+    std::mutex _buf_mutex;
+    std::condition_variable _buf_cond;
+
+    HackRF_transceiver_mode_t _current_mode;
+
+    SoapyHackRFSession _sess;
 };
