@@ -479,29 +479,25 @@ void SoapyHackRF::setFrequency( const int direction, const size_t channel, const
 		throw std::runtime_error( "setFrequency(" + name + ") unknown name" );
 
 	std::lock_guard<std::mutex> lock(_device_mutex);
+	_current_frequency = frequency;
 
-	if (direction == SOAPY_SDR_RX)
-	{
-		SoapySDR::logf(SOAPY_SDR_DEBUG, "Setting RX stream frequency to (%f)", frequency);
-		_rx_stream.frequency = frequency;
+
+	if(direction==SOAPY_SDR_RX){
+
+		_rx_stream.frequency=_current_frequency;
 	}
-	if (direction == SOAPY_SDR_TX)
-	{
-		SoapySDR::logf(SOAPY_SDR_DEBUG, "Setting TX stream frequency to (%f)", frequency);
-		_tx_stream.frequency = frequency;
+	if(direction==SOAPY_SDR_TX){
+
+		_tx_stream.frequency=_current_frequency;
 	}
 
-	if (_dev != NULL &&
-	    ((direction == SOAPY_SDR_TX && _current_mode == HACKRF_TRANSCEIVER_MODE_TX) ||
-	     (direction == SOAPY_SDR_RX && _current_mode == HACKRF_TRANSCEIVER_MODE_RX)))
+	if ( _dev != NULL )
 	{
-		_current_frequency = frequency;
-		SoapySDR::logf(SOAPY_SDR_DEBUG, "Setting hackrf frequency to (%llu)", (unsigned long long) _current_frequency);
-		int ret = hackrf_set_freq(_dev, _current_frequency);
+		int ret = hackrf_set_freq( _dev, _current_frequency );
 
 		if ( ret != HACKRF_SUCCESS )
 		{
-			SoapySDR::logf( SOAPY_SDR_ERROR, "hackrf_set_freq(%llu) returned %s", (unsigned long long) _current_frequency, hackrf_error_name( (hackrf_error) ret ) );
+			SoapySDR::logf( SOAPY_SDR_ERROR, "hackrf_set_freq(%f) returned %s", _current_frequency, hackrf_error_name( (hackrf_error) ret ) );
 		}
 	}
 }
